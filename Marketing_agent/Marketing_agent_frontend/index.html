@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ridgeline — Hackathon Launch &amp; Marketing Agent</title>
+<meta name="description" content="Agents plot your hackathon launch kit, relay-style, over a ridgeline." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --plum:      #281E30;
+    --plum-deep: #180F1D;
+    --mauve:     #98768E;
+    --lavender:  #D3B8C5;
+    --blush:     #F6D4CF;
+    --coral:     #D8928B;
+    --paper:     #FBF1EC;
+
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Sora', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --radius-lg: 28px;
+    --radius-md: 18px;
+    --radius-sm: 10px;
+
+    --ease: cubic-bezier(.22,.61,.36,1);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+  }
+
+  body{ margin:0; background:var(--plum-deep); color:var(--paper); font-family:var(--font-body); -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:var(--font-display); margin:0; font-weight:600; letter-spacing:-0.01em; }
+  p{ margin:0; }
+  button{ font-family:inherit; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 28px; }
+  @media (max-width:640px){ .wrap{ padding:0 20px; } }
+  a{ color:inherit; }
+  ::selection{ background:var(--coral); color:var(--plum-deep); }
+  :focus-visible{ outline:2px solid var(--blush); outline-offset:3px; border-radius:6px; }
+
+  /* ---------------- top bar ---------------- */
+  .topbar{
+    position:fixed; top:0; left:0; right:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 28px;
+    background:linear-gradient(to bottom, rgba(24,15,29,0.85), rgba(24,15,29,0));
+    backdrop-filter:blur(6px);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-size:1.15rem; font-weight:600; letter-spacing:0.01em; }
+  .brand svg{ width:22px; height:22px; }
+  .topbar-right{ display:flex; align-items:center; gap:10px; position:relative; }
+
+  .status-pill{
+    display:flex; align-items:center; gap:7px;
+    font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.03em;
+    padding:7px 12px 7px 10px; border-radius:999px;
+    background:rgba(251,241,236,0.06); border:1px solid rgba(251,241,236,0.14);
+    color:rgba(251,241,236,0.75);
+  }
+  .status-pill .dot{ width:7px; height:7px; border-radius:50%; background:var(--mauve); flex:none; }
+  .status-pill[data-state="online"] .dot{ background:#8FD4A8; box-shadow:0 0 0 3px rgba(143,212,168,0.18); }
+  .status-pill[data-state="offline"] .dot{ background:var(--coral); box-shadow:0 0 0 3px rgba(216,146,139,0.18); }
+  .status-pill[data-state="checking"] .dot{ animation:pulse-dot 1s ease-in-out infinite; }
+  @keyframes pulse-dot{ 50%{ opacity:0.35; } }
+
+  .icon-btn{
+    width:34px; height:34px; border-radius:50%;
+    background:rgba(251,241,236,0.06); border:1px solid rgba(251,241,236,0.14);
+    color:var(--paper); display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:background 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .icon-btn:hover{ background:rgba(251,241,236,0.14); transform:rotate(24deg); }
+  .icon-btn svg{ width:16px; height:16px; }
+
+  .settings-panel{
+    position:absolute; top:44px; right:0; width:280px;
+    background:var(--plum); border:1px solid rgba(251,241,236,0.14); border-radius:var(--radius-sm); padding:16px;
+    opacity:0; visibility:hidden; transform:translateY(-8px);
+    transition:opacity 0.22s var(--ease), transform 0.22s var(--ease), visibility 0.22s;
+    box-shadow:0 20px 40px rgba(0,0,0,0.35);
+  }
+  .settings-panel.is-open{ opacity:1; visibility:visible; transform:translateY(0); }
+  .settings-panel label{ display:block; font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.05em; text-transform:uppercase; color:rgba(251,241,236,0.55); margin-bottom:8px; }
+  .settings-panel input{ width:100%; padding:9px 10px; border-radius:8px; border:1px solid rgba(251,241,236,0.2); background:rgba(251,241,236,0.06); color:var(--paper); font-family:var(--font-mono); font-size:0.78rem; }
+  .settings-hint{ font-size:0.7rem; color:rgba(251,241,236,0.4); margin-top:8px; line-height:1.5; }
+
+  /* ---------------- hero ---------------- */
+  .hero{
+    position:relative; min-height:100svh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    overflow:hidden;
+    background:
+      radial-gradient(120% 70% at 50% 8%, rgba(216,146,139,0.35), transparent 60%),
+      linear-gradient(180deg, var(--plum-deep) 0%, var(--plum) 45%, #4a3346 68%, var(--coral) 100%);
+    padding:120px 28px 60px; text-align:center;
+  }
+  .sun{
+    position:absolute; left:50%; top:26%; width:220px; height:220px; border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(246,212,207,0.9) 0%, rgba(216,146,139,0.5) 45%, transparent 72%);
+    filter:blur(2px); animation:sun-breathe 7s ease-in-out infinite;
+  }
+  @keyframes sun-breathe{ 0%,100%{ opacity:0.75; transform:translate(-50%,-50%) scale(1);} 50%{ opacity:1; transform:translate(-50%,-50%) scale(1.08);} }
+  .ridge-layer{ position:absolute; left:-5%; width:110%; bottom:0; transition:transform 0.1s linear; }
+  .ridge-layer svg{ width:100%; height:auto; display:block; }
+  .ridge-back{ bottom:14%; opacity:0.55; animation:drift-slow 22s ease-in-out infinite; }
+  .ridge-mid{ bottom:6%; opacity:0.8; animation:drift-slow 16s ease-in-out infinite reverse; }
+  .ridge-front{ bottom:-2%; animation:drift-slow 12s ease-in-out infinite; }
+  @keyframes drift-slow{ 0%,100%{ margin-left:0px; } 50%{ margin-left:14px; } }
+
+  .eyebrow{
+    font-family:var(--font-mono); font-size:0.74rem; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--blush); opacity:0.85; display:inline-flex; align-items:center; gap:10px;
+    margin-bottom:22px; position:relative; z-index:2;
+  }
+  .eyebrow::before, .eyebrow::after{ content:''; width:26px; height:1px; background:currentColor; opacity:0.5; }
+
+  .hero h1{ position:relative; z-index:2; font-size:clamp(2.6rem, 6.4vw, 5rem); line-height:1.02; max-width:18ch; margin:0 auto 22px; color:var(--paper); }
+  .hero h1 em{ font-style:italic; color:var(--blush); }
+  .hero-sub{ position:relative; z-index:2; max-width:48ch; margin:0 auto 40px; font-size:1.05rem; line-height:1.65; color:rgba(251,241,236,0.82); }
+  .hero-actions{ position:relative; z-index:2; display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-bottom:36px; }
+
+  .btn{
+    font-family:var(--font-body); font-weight:600; font-size:0.92rem; padding:14px 26px; border-radius:999px; border:none; cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px;
+    transition:transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.25s var(--ease);
+  }
+  .btn-primary{ background:var(--coral); color:var(--plum-deep); box-shadow:0 12px 28px -10px rgba(216,146,139,0.7); }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 16px 34px -8px rgba(216,146,139,0.85); }
+  .btn-ghost{ background:rgba(251,241,236,0.08); color:var(--paper); border:1px solid rgba(251,241,236,0.28); }
+  .btn-ghost:hover{ background:rgba(251,241,236,0.16); transform:translateY(-2px); }
+  .btn:disabled{ opacity:0.55; cursor:not-allowed; transform:none !important; }
+  .btn[data-loading="true"] .btn-label::after{ content:''; display:inline-block; width:1ch; animation:ellipsis 1.2s steps(4) infinite; }
+  @keyframes ellipsis{ 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} 100%{content:''} }
+
+  /* quick nav pills */
+  .quick-nav{ position:relative; z-index:2; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .quick-nav button{
+    font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.03em;
+    padding:8px 16px; border-radius:999px; border:1px solid rgba(251,241,236,0.22);
+    background:rgba(251,241,236,0.04); color:rgba(251,241,236,0.7); cursor:pointer;
+    transition:background 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
+  }
+  .quick-nav button:hover{ background:rgba(251,241,236,0.12); color:var(--paper); border-color:rgba(251,241,236,0.4); }
+
+  .scroll-cue{
+    position:absolute; bottom:22px; left:50%; transform:translateX(-50%); z-index:2;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    font-family:var(--font-mono); font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; color:rgba(251,241,236,0.5);
+  }
+  .scroll-cue .line{ width:1px; height:34px; background:linear-gradient(to bottom, rgba(251,241,236,0.6), transparent); animation:scroll-drop 1.8s ease-in-out infinite; }
+  @keyframes scroll-drop{ 0%{ transform:scaleY(0); transform-origin:top; opacity:0.4; } 50%{ transform:scaleY(1); transform-origin:top; opacity:1;} 100%{ transform:scaleY(0); transform-origin:bottom; opacity:0.4;} }
+
+  /* ---------------- section framing ---------------- */
+  section.panel{ padding:110px 0; position:relative; }
+  section.panel.tight{ padding:80px 0; }
+  .section-head{ max-width:640px; margin-bottom:52px; }
+  .section-head .eyebrow{ color:var(--coral); }
+  .section-head h2{ font-size:clamp(1.8rem, 3.6vw, 2.5rem); color:var(--paper); margin-bottom:14px; }
+  .section-head p{ color:rgba(251,241,236,0.68); font-size:1rem; line-height:1.6; }
+
+  [data-reveal]{ opacity:0; transform:translateY(24px); transition:opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+  [data-reveal].is-visible{ opacity:1; transform:translateY(0); }
+
+  #generator{ background:var(--plum); }
+  #reminders{ background:var(--plum-deep); }
+  #registration{ background:var(--plum); }
+  #vision{ background:var(--plum-deep); }
+
+  .two-col{ display:grid; grid-template-columns:0.85fr 1.15fr; gap:44px; align-items:start; }
+  @media (max-width:900px){ .two-col{ grid-template-columns:1fr; } }
+
+  .card{ background:rgba(251,241,236,0.05); border:1px solid rgba(251,241,236,0.12); border-radius:var(--radius-lg); padding:32px; }
+
+  .field{ margin-bottom:20px; }
+  .field label{ display:block; font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.06em; text-transform:uppercase; color:rgba(251,241,236,0.55); margin-bottom:8px; }
+  .field input, .field textarea, .field select{
+    width:100%; padding:13px 14px; border-radius:var(--radius-sm);
+    border:1px solid rgba(251,241,236,0.18); background:rgba(24,15,29,0.4);
+    color:var(--paper); font-family:var(--font-body); font-size:0.95rem;
+    transition:border-color 0.2s var(--ease), background 0.2s var(--ease);
+    appearance:none;
+  }
+  .field select{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FBF1EC' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 14px center; background-size:16px; padding-right:38px;
+  }
+  .field input::placeholder, .field textarea::placeholder{ color:rgba(251,241,236,0.32); }
+  .field input:focus, .field textarea:focus, .field select:focus{ border-color:var(--coral); background:rgba(24,15,29,0.65); outline:none; }
+  .field textarea{ min-height:88px; resize:vertical; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:480px){ .field-row{ grid-template-columns:1fr; } }
+
+  .results-empty{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px;
+    min-height:220px; border:1px dashed rgba(251,241,236,0.2); border-radius:var(--radius-lg); padding:40px; color:rgba(251,241,236,0.5);
+  }
+  .results-empty svg{ width:56px; height:auto; opacity:0.6; }
+  .results-empty p{ font-size:0.92rem; max-width:32ch; line-height:1.6; }
+
+  .relay-svg{ display:block; width:100%; height:48px; margin:6px 0 18px; }
+  .relay-svg path{ fill:none; stroke:rgba(251,241,236,0.18); stroke-width:2; stroke-dasharray:4 6; }
+  .relay-svg circle{ opacity:0; }
+
+  .agent-tag{ font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.08em; color:var(--coral); text-transform:uppercase; }
+  .agent-body p{ margin-bottom:12px; line-height:1.65; font-size:0.94rem; color:rgba(251,241,236,0.85); }
+  .agent-body p:last-child{ margin-bottom:0; }
+  .agent-body .fmt-label{ font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.04em; text-transform:uppercase; color:var(--lavender); margin-top:14px; margin-bottom:6px; }
+  .fmt-list{ margin:0 0 12px; padding-left:20px; }
+  .fmt-list li{ margin-bottom:8px; line-height:1.6; font-size:0.94rem; color:rgba(251,241,236,0.85); }
+
+  .content-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:700px){ .content-grid{ grid-template-columns:1fr; } }
+  .content-card{ background:rgba(251,241,236,0.05); border:1px solid rgba(251,241,236,0.12); border-radius:var(--radius-md); padding:22px; }
+  .content-card-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .content-card-title{ font-family:var(--font-display); font-size:1.1rem; color:var(--paper); margin-top:2px; }
+
+  .copy-btn{
+    display:flex; align-items:center; gap:6px; flex:none;
+    font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.03em;
+    padding:6px 10px; border-radius:999px; border:1px solid rgba(251,241,236,0.22);
+    background:rgba(251,241,236,0.04); color:rgba(251,241,236,0.7); cursor:pointer;
+    transition:background 0.2s var(--ease), color 0.2s var(--ease);
+  }
+  .copy-btn:hover{ background:rgba(251,241,236,0.14); color:var(--paper); }
+  .copy-btn svg{ width:13px; height:13px; }
+
+  .result-card{ background:rgba(251,241,236,0.05); border:1px solid rgba(251,241,236,0.12); border-radius:var(--radius-lg); padding:28px; margin-bottom:18px; }
+  .result-card:last-child{ margin-bottom:0; }
+  .result-card .content-card-head{ margin-bottom:14px; }
+
+  .skeleton{ height:14px; border-radius:6px; margin-bottom:10px; background:linear-gradient(90deg, rgba(251,241,236,0.06), rgba(251,241,236,0.14), rgba(251,241,236,0.06)); background-size:200% 100%; animation:shimmer 1.4s ease-in-out infinite; }
+  .skeleton.short{ width:60%; }
+  @keyframes shimmer{ 0%{ background-position:200% 0;} 100%{ background-position:-200% 0;} }
+
+  .error-banner{
+    display:flex; align-items:flex-start; gap:12px; padding:18px 20px; border-radius:var(--radius-md);
+    background:rgba(216,146,139,0.12); border:1px solid rgba(216,146,139,0.4); color:var(--blush); font-size:0.9rem; line-height:1.55;
+  }
+  .error-banner svg{ width:18px; height:18px; flex:none; margin-top:2px; }
+  .empty-note{ color:rgba(251,241,236,0.5); font-size:0.9rem; }
+
+  /* dropzone (vision) */
+  .dropzone{
+    position:relative; border:1.5px dashed rgba(251,241,236,0.25); border-radius:var(--radius-md);
+    padding:34px 20px; text-align:center; cursor:pointer; margin-top:6px;
+    transition:border-color 0.2s var(--ease), background 0.2s var(--ease);
+  }
+  .dropzone:hover, .dropzone[data-drag="true"]{ border-color:var(--coral); background:rgba(216,146,139,0.06); }
+  .dropzone svg{ width:30px; height:30px; margin-bottom:10px; opacity:0.6; }
+  .dropzone p{ font-size:0.86rem; color:rgba(251,241,236,0.55); }
+  .dropzone .dz-accent{ color:var(--blush); text-decoration:underline; }
+
+  .preview-wrap{ margin-top:16px; position:relative; }
+  .preview-frame{ position:relative; border-radius:var(--radius-sm); overflow:hidden; border:1px solid rgba(251,241,236,0.18); }
+  .preview-frame img{ display:block; width:100%; max-height:220px; object-fit:cover; }
+  .corner{ position:absolute; width:16px; height:16px; border-color:var(--blush); }
+  .corner.tl{ top:6px; left:6px; border-top:2px solid; border-left:2px solid; }
+  .corner.tr{ top:6px; right:6px; border-top:2px solid; border-right:2px solid; }
+  .corner.bl{ bottom:6px; left:6px; border-bottom:2px solid; border-left:2px solid; }
+  .corner.br{ bottom:6px; right:6px; border-bottom:2px solid; border-right:2px solid; }
+
+  footer{ padding:48px 0 40px; border-top:1px solid rgba(251,241,236,0.1); background:var(--plum-deep); }
+  .footer-row{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; font-size:0.82rem; color:rgba(251,241,236,0.5); }
+  .footer-ridge{ width:100%; height:22px; margin-bottom:28px; opacity:0.5; }
+
+  @media (max-width:640px){
+    .settings-panel{ right:-12px; }
+    section.panel{ padding:74px 0; }
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M2 18L8 8L12 14L16 6L22 18H2Z" fill="#D8928B"/></svg>
+    Ridgeline
+  </div>
+  <div class="topbar-right">
+    <div class="status-pill" id="statusPill" data-state="checking">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Checking</span>
+    </div>
+    <button class="icon-btn" id="settingsToggle" aria-label="Backend settings" aria-haspopup="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 005 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+    <div class="settings-panel" id="settingsPanel" style="width: 320px;">
+      <label for="apiBaseInput">Backend URL</label>
+      <input id="apiBaseInput" type="text" spellcheck="false" placeholder="http://127.0.0.1:8000" style="margin-bottom: 12px;" />
+      
+      <label style="margin-top: 10px;">Email / SMTP Settings</label>
+      <input id="smtpServerInput" type="text" placeholder="Server (e.g. smtp.gmail.com)" style="margin-bottom: 8px;" />
+      <input id="smtpPortInput" type="number" placeholder="Port (e.g. 587)" style="margin-bottom: 8px;" />
+      <input id="smtpSenderInput" type="text" placeholder="Sender Email" style="margin-bottom: 8px;" />
+      <input id="smtpPasswordInput" type="password" placeholder="SMTP App Password" style="margin-bottom: 8px;" />
+      <input id="smtpConductorInput" type="text" placeholder="Conductor Email" style="margin-bottom: 8px;" />
+      
+      <p class="settings-hint">Configure SMTP to send real emails to candidates and conductors. (Gmail requires a Gmail App Password).</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============== HERO ============== -->
+<section class="hero" id="hero">
+  <div class="sun"></div>
+  <div class="ridge-layer ridge-back" data-depth="-14">
+    <svg viewBox="0 0 1440 260" preserveAspectRatio="none"><path fill="#98768E" d="M0 180 L120 120 L240 160 L380 70 L520 150 L660 90 L800 170 L940 110 L1080 190 L1220 130 L1440 200 L1440 260 L0 260 Z"/></svg>
+  </div>
+  <div class="ridge-layer ridge-mid" data-depth="-24">
+    <svg viewBox="0 0 1440 220" preserveAspectRatio="none"><path fill="#584156" d="M0 160 L160 90 L300 140 L460 60 L620 130 L780 80 L940 150 L1100 100 L1260 170 L1440 120 L1440 220 L0 220 Z"/></svg>
+  </div>
+  <div class="ridge-layer ridge-front" data-depth="-40">
+    <svg viewBox="0 0 1440 180" preserveAspectRatio="none"><path fill="#180F1D" d="M0 130 L100 60 L220 110 L340 40 L480 100 L620 30 L760 100 L900 50 L1040 120 L1180 70 L1320 140 L1440 90 L1440 180 L0 180 Z"/></svg>
+  </div>
+
+  <p class="eyebrow">Google ADK · Gemini 2.5 Flash · MCP · Qdrant</p>
+  <h1>Idea to launch kit.<br><em>One relay.</em></h1>
+  <p class="hero-sub">
+    Give Ridgeline your hackathon's name, theme, audience, and round count.
+    A Brief Analyst plots the channel mix, a Content Generator carries it home —
+    posters, messages, mail, reminders, and registration pulses, all ready to paste and send.
+  </p>
+  <div class="hero-actions">
+    <button class="btn btn-primary" data-scroll-to="#generator"><span class="btn-label">Build a launch kit</span></button>
+    <button class="btn btn-ghost" data-scroll-to="#vision"><span class="btn-label">Analyze an asset</span></button>
+  </div>
+  <div class="quick-nav">
+    <button data-scroll-to="#generator">Launch kit</button>
+    <button data-scroll-to="#reminders">Round reminders</button>
+    <button data-scroll-to="#registration">Registration pulse</button>
+    <button data-scroll-to="#vision">Vision check</button>
+  </div>
+
+  <div class="scroll-cue"><span class="line"></span>Scroll</div>
+</section>
+
+<!-- ============== 1. LAUNCH KIT ============== -->
+<section class="panel" id="generator">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Agent relay</p>
+      <h2>Send your brief up the ridge</h2>
+      <p>The Brief Analyst reads your audience first and decides the channel mix. The Content Generator picks it up — agent to agent — and writes the tagline, poster, messages, mail, and listing copy.</p>
+    </div>
+
+    <div class="two-col">
+      <form class="card" id="kitForm" data-reveal>
+        <div class="field">
+          <label for="kitNameInput">Hackathon name</label>
+          <input id="kitNameInput" type="text" placeholder="e.g. Summit Build 2026" required />
+        </div>
+        <div class="field">
+          <label for="kitThemeInput">Theme</label>
+          <input id="kitThemeInput" type="text" placeholder="e.g. AI for climate resilience" required />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="kitAudienceInput">Target audience</label>
+            <select id="kitAudienceInput" required>
+              <option value="college students">College students</option>
+              <option value="working professionals">Working professionals</option>
+              <option value="mixed">Mixed / both</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="kitRoundsInput">Number of rounds</label>
+            <input id="kitRoundsInput" type="number" min="1" step="1" value="3" required />
+          </div>
+          <div class="field">
+  <label for="kitVenueInput">Venue & Date</label>
+  <input type="text" id="kitVenueInput" placeholder="Eg: Main Auditorium, 25th July">
+</div>
+
+<div class="field">
+  <label for="kitInstaInput">Instagram ID</label>
+  <input type="text" id="kitInstaInput" placeholder="Enter Insta handle">
+</div>
+
+<div class="field">
+  <label for="kitLinkedinInput">LinkedIn ID / URN</label>
+  <input type="text" id="kitLinkedinInput" placeholder="Enter LinkedIn URN">
+</div>
+        </div>
+        <button class="btn btn-primary" type="submit" id="kitBtn" style="width:100%; justify-content:center;">
+          <span class="btn-label">Send to the agents</span>
+        </button>
+      </form>
+
+      <div>
+        <div class="results-empty" id="kitEmpty" data-reveal>
+          <svg viewBox="0 0 64 40" fill="none"><path d="M2 34L16 16L26 26L38 8L50 22L62 34" stroke="#D3B8C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <p>Your launch kit summit awaits. Fill in the brief and watch the relay from the Brief Analyst to the Content Generator.</p>
+        </div>
+
+        <div id="kitResults">
+          <svg class="relay-svg" viewBox="0 0 400 48" preserveAspectRatio="none">
+            <path id="kitRelayPath" d="M20 8 C 160 8, 240 40, 380 40" />
+            <circle id="kitRelayDot" r="5" fill="#D8928B" />
+          </svg>
+          <div class="content-grid" id="kitGrid"></div>
+
+          <!-- Social Media Share Card -->
+          <div class="card" id="socialShareCard" style="margin-top: 24px; display: none;">
+            <h3 style="margin-bottom: 12px; font-family: var(--font-display); font-size: 1.35rem; display: flex; align-items: center; gap: 8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--coral)" stroke-width="2" style="width: 20px; height: 20px;"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+              Share on Social Media
+            </h3>
+            <p style="font-size: 0.86rem; color: rgba(251,241,236,0.65); margin-bottom: 20px;">
+              Directly post the generated poster and caption to your social media channels. Enable Demo Mode for simulated success during pitches.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+              <button type="button" id="shareTabInsta" class="btn btn-primary" style="justify-content: center; font-size: 0.85rem; padding: 10px 0;">Instagram</button>
+              <button type="button" id="shareTabLinkedin" class="btn btn-ghost" style="justify-content: center; font-size: 0.85rem; padding: 10px 0;">LinkedIn</button>
+            </div>
+
+            <div class="field">
+              <label for="shareCaptionInput">Caption / Post Content</label>
+              <textarea id="shareCaptionInput" rows="4" placeholder="Enter social post caption..." required></textarea>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label id="shareUserLabel" for="shareUserInput">Instagram Username</label>
+                <input id="shareUserInput" type="text" placeholder="e.g. hackathon_organizer" required />
+              </div>
+              <div class="field">
+                <label id="sharePassLabel" for="sharePassInput">Instagram Password</label>
+                <input id="sharePassInput" type="password" placeholder="••••••••" required />
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+              <input type="checkbox" id="shareDemoModeInput" checked style="width: 16px; height: 16px; accent-color: var(--coral);" />
+              <label for="shareDemoModeInput" style="font-size: 0.84rem; font-family: var(--font-mono); color: var(--lavender); cursor: pointer; user-select: none;">
+                Enable Simulated Demo Mode (Recommended)
+              </label>
+            </div>
+
+            <button type="button" id="shareSubmitBtn" class="btn btn-primary" style="width: 100%; justify-content: center;">
+              <span class="btn-label">Post to Instagram</span>
+            </button>
+            
+            <div id="shareStatusMessage" style="margin-top: 14px; font-size: 0.86rem; text-align: center; font-family: var(--font-mono);" hidden></div>
+          </div>
+        </div>
+
+        <div class="error-banner" id="kitError" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          <span id="kitErrorMsg"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 2. ROUND REMINDERS ============== -->
+<section class="panel tight" id="reminders">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Deadline pulse</p>
+      <h2>3 days left. 2. 1.</h2>
+      <p>Call this once per day per round from your own scheduler. The urgency in the message shifts automatically as the deadline gets closer.</p>
+    </div>
+
+    <div class="two-col">
+      <form class="card" id="reminderForm" data-reveal>
+        <div class="field-row">
+          <div class="field">
+            <label for="reminderRoundInput">Round number</label>
+            <input id="reminderRoundInput" type="number" min="1" step="1" value="1" required />
+          </div>
+          <div class="field">
+            <label for="reminderDaysInput">Days left</label>
+            <select id="reminderDaysInput" required>
+              <option value="3">3 days left</option>
+              <option value="2">2 days left</option>
+              <option value="1">1 day left</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="reminderEmailsInput">Send to Candidates (Comma-separated Emails)</label>
+          <input id="reminderEmailsInput" type="text" placeholder="e.g. candidate1@gmail.com, candidate2@gmail.com" />
+        </div>
+        <button class="btn btn-primary" type="submit" id="reminderBtn" style="width:100%; justify-content:center;">
+          <span class="btn-label">Generate & Email reminder</span>
+        </button>
+      </form>
+
+      <div>
+        <div class="results-empty" id="reminderEmpty" data-reveal>
+          <svg viewBox="0 0 64 40" fill="none"><circle cx="32" cy="20" r="14" stroke="#D3B8C5" stroke-width="2"/><path d="M32 12v8l6 4" stroke="#D3B8C5" stroke-width="2" stroke-linecap="round"/></svg>
+          <p>Pick a round and how many days are left — the message lands here, ready to copy into WhatsApp or email.</p>
+        </div>
+
+        <div class="result-card" id="reminderResult" hidden>
+          <div class="content-card-head">
+            <span class="agent-tag">Reminder</span>
+            <button type="button" class="copy-btn" data-copy>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              <span>Copy</span>
+            </button>
+          </div>
+          <div class="agent-body" id="reminderText"></div>
+        </div>
+
+        <div class="error-banner" id="reminderError" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          <span id="reminderErrorMsg"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 3. REGISTRATION PULSE ============== -->
+<section class="panel" id="registration">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Registration event</p>
+      <h2>Someone just signed up</h2>
+      <p>Fire this from your own registration form's backend the moment a new signup lands. It writes the internal milestone alert and the candidate's welcome message with the problem statement attached.</p>
+    </div>
+
+    <div class="two-col">
+      <form class="card" id="regForm" data-reveal>
+        <div class="field-row">
+          <div class="field">
+            <label for="regCandidateInput">Candidate name</label>
+            <input id="regCandidateInput" type="text" placeholder="e.g. Aditi Rao" required />
+          </div>
+          <div class="field">
+            <label for="regHackathonInput">Hackathon name</label>
+            <input id="regHackathonInput" type="text" placeholder="e.g. Summit Build 2026" required />
+          </div>
+        </div>
+        <div class="field">
+          <label for="regEmailInput">Candidate email</label>
+          <input id="regEmailInput" type="email" placeholder="e.g. candidate@gmail.com" required />
+        </div>
+        <div class="field">
+          <label for="regCountInput">Total registrations today</label>
+          <input id="regCountInput" type="number" min="0" step="1" placeholder="500" required />
+        </div>
+        <div class="field">
+          <label for="regProblemInput">Problem statement for their round</label>
+          <textarea id="regProblemInput" placeholder="Paste the round's problem statement here" required></textarea>
+        </div>
+        <button class="btn btn-primary" type="submit" id="regBtn" style="width:100%; justify-content:center;">
+          <span class="btn-label">Send registration pulse</span>
+        </button>
+      </form>
+
+      <div>
+        <div class="results-empty" id="regEmpty" data-reveal>
+          <svg viewBox="0 0 64 40" fill="none"><path d="M8 30c0-9 6-16 16-16s16 7 16 16" stroke="#D3B8C5" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="10" r="6" stroke="#D3B8C5" stroke-width="2"/><path d="M44 20l6 6-6 6" stroke="#D3B8C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <p>Log a registration and get two things back: the organizer's daily-count alert, and the candidate's welcome message.</p>
+        </div>
+
+        <div id="regResults" hidden>
+          <div class="result-card" id="orgAlertCard">
+            <div class="content-card-head">
+              <span class="agent-tag">Organizer alert</span>
+              <button type="button" class="copy-btn" data-copy>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                <span>Copy</span>
+              </button>
+            </div>
+            <div class="agent-body" id="orgAlertBody"></div>
+          </div>
+          <div class="result-card" id="candMsgCard">
+            <div class="content-card-head">
+              <span class="agent-tag">Candidate message</span>
+              <button type="button" class="copy-btn" data-copy>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                <span>Copy</span>
+              </button>
+            </div>
+            <div class="agent-body" id="candMsgBody"></div>
+          </div>
+        </div>
+
+        <div class="error-banner" id="regError" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          <span id="regErrorMsg"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 4. FINAL ROUND SCHEDULER ============== -->
+<section class="panel" id="scheduler">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Interview Slots</p>
+      <h2>Final Round Meet Scheduler</h2>
+      <p>Allocate interview slots sequentially, generate secure Google Meet or Zoom Meet URLs, and trigger calendar invitation emails to all candidates and conductors.</p>
+    </div>
+
+    <div class="two-col">
+      <form class="card" id="schedulerForm" data-reveal>
+        <div class="field">
+          <label for="schedCandidatesInput">Candidates List (Name &lt;email&gt; comma-separated)</label>
+          <textarea id="schedCandidatesInput" rows="4" placeholder="e.g. Aditi &lt;aditi@gmail.com&gt;, Bob &lt;bob@gmail.com&gt;" required></textarea>
+        </div>
+        
+        <div class="field-row">
+          <div class="field">
+            <label for="schedStartTimeInput">Start Date & Time</label>
+            <input id="schedStartTimeInput" type="datetime-local" required />
+          </div>
+          <div class="field">
+            <label for="schedDurationInput">Slot Duration</label>
+            <select id="schedDurationInput" required>
+              <option value="15">15 minutes</option>
+              <option value="30" selected>30 minutes</option>
+              <option value="45">45 minutes</option>
+              <option value="60">60 minutes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="schedPlatformInput">Meeting Platform</label>
+            <select id="schedPlatformInput" required>
+              <option value="google_meet">Google Meet</option>
+              <option value="zoom_meet">Zoom Meet</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+          <input type="checkbox" id="schedDemoModeInput" checked style="width: 16px; height: 16px; accent-color: var(--coral);" />
+          <label for="schedDemoModeInput" style="font-size: 0.84rem; font-family: var(--font-mono); color: var(--lavender); cursor: pointer; user-select: none;">
+            Enable Simulated Demo Mode (Recommended)
+          </label>
+        </div>
+
+        <button class="btn btn-primary" type="submit" id="schedBtn" style="width:100%; justify-content:center;">
+          <span class="btn-label">Generate Slots & Email Links</span>
+        </button>
+      </form>
+
+      <div>
+        <div class="results-empty" id="schedEmpty" data-reveal>
+          <svg viewBox="0 0 64 40" fill="none"><rect x="6" y="6" width="52" height="28" rx="3" stroke="#D3B8C5" stroke-width="2"/><path d="M16 22l10 10 22-22" stroke="#D3B8C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <p>Allocate slots and generate meeting URLs. The full scheduler table will load right here.</p>
+        </div>
+
+        <div class="result-card" id="schedResults" hidden>
+          <div class="content-card-head">
+            <span class="agent-tag">Final Slots Table</span>
+            <button type="button" class="copy-btn" id="copySchedBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              <span>Copy Table</span>
+            </button>
+          </div>
+          
+          <div style="overflow-x: auto; width: 100%; margin-top: 14px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left;" id="schedTable">
+              <thead>
+                <tr style="border-bottom: 1.5px solid rgba(251,241,236,0.3); color: var(--lavender);">
+                  <th style="padding: 8px 4px;">Candidate</th>
+                  <th style="padding: 8px 4px;">Start Time</th>
+                  <th style="padding: 8px 4px;">Meeting Link</th>
+                </tr>
+              </thead>
+              <tbody id="schedTableBody">
+                <!-- dynamic rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="error-banner" id="schedError" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          <span id="schedErrorMsg"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 5. VISION CHECK ============== -->
+<section class="panel" id="vision">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Asset check</p>
+      <h2>Hand the ridge a photo</h2>
+      <p>Drop in a poster or product shot. Gemini reads the composition and colour psychology, then hands back three fixes to make it convert.</p>
+    </div>
+
+    <div class="two-col">
+      <form class="card" id="visionForm" data-reveal>
+        <div class="field">
+          <label for="visionCampaignInput">Campaign name</label>
+          <input id="visionCampaignInput" type="text" placeholder="e.g. Summit Build 2026" required />
+        </div>
+        <div class="field">
+          <label>Image</label>
+          <div class="dropzone" id="dropzone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#F6D4CF" stroke-width="1.6"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            <p>Drop an image or <span class="dz-accent">click to browse</span></p>
+          </div>
+          <input type="file" id="fileInput" accept="image/*" hidden />
+          <div class="preview-wrap" id="previewWrap" hidden>
+            <div class="preview-frame">
+              <img id="previewImg" alt="Selected asset preview" />
+              <span class="corner tl"></span><span class="corner tr"></span>
+              <span class="corner bl"></span><span class="corner br"></span>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit" id="visionBtn" style="width:100%; justify-content:center;">
+          <span class="btn-label">Read the asset</span>
+        </button>
+      </form>
+
+      <div>
+        <div class="results-empty" id="visionEmpty" data-reveal>
+          <svg viewBox="0 0 64 40" fill="none"><rect x="6" y="6" width="52" height="28" rx="3" stroke="#D3B8C5" stroke-width="2"/><circle cx="18" cy="16" r="3" stroke="#D3B8C5" stroke-width="2"/><path d="M10 30L24 18L34 26L44 16L54 28" stroke="#D3B8C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <p>Once you send an asset, the read-out lands here: visual elements, colour psychology, and three concrete fixes.</p>
+        </div>
+
+        <div class="result-card" id="visionResults" hidden>
+          <span class="agent-tag">Vision read</span>
+          <div class="agent-body" id="visionBody" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="error-banner" id="visionError" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          <span id="visionErrorMsg"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <svg class="footer-ridge" viewBox="0 0 1440 40" preserveAspectRatio="none"><path fill="none" stroke="#98768E" stroke-width="1.5" d="M0 30L120 12L240 26L380 6L520 24L660 10L800 28L940 14L1080 30L1220 16L1440 26"/></svg>
+    <div class="footer-row">
+      <span>Ridgeline · Google ADK, Gemini 2.5 Flash, MCP &amp; Qdrant</span>
+      <span id="footerApiBase" class="footer-api"></span>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
