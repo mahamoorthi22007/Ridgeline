@@ -6,3 +6,4 @@ python-multipart
 google-generativeai
 qdrant-client[fastembed]
 groq
+apscheduler
