@@ -3,7 +3,6 @@ uvicorn
 python-dotenv
 pydantic
 python-multipart
-google-adk
-google-genai
+google-generativeai
 qdrant-client[fastembed]
-mcp
+groq
