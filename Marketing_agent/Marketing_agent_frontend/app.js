@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const CONFIG = { apiBase: 'http://127.0.0.1:8000' };
+  const CONFIG = { apiBase: 'https://ridgeline-8ylq.onrender.com' };
 
   const $ = (sel, ctx = document) => ctx.querySelector(sel);
   const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
